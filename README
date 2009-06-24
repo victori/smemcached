@@ -31,6 +31,8 @@ SMemcached is:
   of memory. This leads to excessive memory consumption when the data is varied in size. SMemcached 
   avoids this scenario by storing the data efficiently using the JVM's Ehcache/HashMap cache at the 
   cost of some CPU overhead.
+
+SMemcached has:
   
 - no limitations
 
@@ -61,4 +63,4 @@ Configuration
 
 - TODO
 
-Victor Igumnov <<victori@fabulously40.com>>
+Victor Igumnov <victori@fabulously40.com>
