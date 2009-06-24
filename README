@@ -1,0 +1,64 @@
+
+SMemcached
+==========
+
+SMemcached is a port of Brad Fitzpatrick's "memcached" distributed memory 
+object caching system from C to Scala
+
+SMemcached unlike memcached is optimized for varied cache sizes . Data of 
+varied sizes is more efficiently cached which translates to less memory
+waste. Scalability and performance is offered by the JVM's garbage collector 
+and async IO via NIO.
+
+Features
+--------
+
+SMemcached is:
+
+- fast
+
+  It runs on the JVM so it can take advantage of the hard work people have
+  put into java performance.
+  
+- small
+
+  Currently about 800 lines of scala code, including comments, because it relies
+  on Apache Mina and Ehcache.
+
+- memory efficient
+
+  Memcached's slab allocator stores data in fixed sized buckets for cpu optimization at the cost 
+  of memory. This leads to excessive memory consumption when the data is varied in size. SMemcached 
+  avoids this scenario by storing the data efficiently using the JVM's Ehcache/HashMap cache at the 
+  cost of some CPU overhead.
+  
+- no limitations
+
+  Since SMemcached stores memory efficiently there is no point in having a 1MB cache store size limit. 
+  
+- no external runtime dependencies
+  
+  The JAR that is provided will run on any java 5 JVM as-is. Just deploy and run, all dependencies
+  are included in a single JAR file.
+  
+Use
+---
+
+SMemcached requires java 5 and ant 1.7.
+
+Building from source is easy:
+
+    $ ant jar
+    
+Scala libraries and dependencies are included.
+
+Running SMemcached is also simple:
+
+    $ java -jar target/smemcached.jar -h
+
+Configuration
+-------------
+
+- TODO
+
+Victor Igumnov <<victori@fabulously40.com>>
