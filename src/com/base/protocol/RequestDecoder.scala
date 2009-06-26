@@ -36,30 +36,33 @@ class RequestDecoder extends MessageDecoderAdapter {
   def decode(sess:IoSession,buf:IoBuffer,out:ProtocolDecoderOutput): MessageDecoderResult = {
     val baos = new ByteArrayOutputStream()
 
-    /* Fetch data */
-    val mData = sess.getAttribute(sessId).asInstanceOf[MemElement]
-    if(mData != null) {
-      if(buf.remaining <= mData.length) return MessageDecoderResult.NEED_DATA
-      mData.data = new Array[Byte](mData.length) ; buf.get(mData.data)
-      sess.setAttribute(sessId,null)
-      out.write(mData)
-      return MessageDecoderResult.OK
-    }
-
-    /* Decode command */
-    buf.mark
-    do {
-      val c = buf.get.asInstanceOf[char]
-      baos.write(c)
-      if(c == '\r' && buf.hasRemaining && buf.get == '\n') {
-        baos.close
-        val mData = MemcacheProtocolDecoder.decode(baos.toString)
-        if(mData.waitData) sess.setAttribute(sessId, mData) else out.write(mData)
+    sess.getAttribute(sessId) match {
+      /* Fetch data */
+      case mData:MemElement => {
+        if(buf.remaining <= mData.length) return MessageDecoderResult.NEED_DATA
+        mData.data = new Array[Byte](mData.length) ; buf.get(mData.data)
+        sess.setAttribute(sessId,null)
+        out.write(mData)
         return MessageDecoderResult.OK
       }
-    } while (buf.hasRemaining)
+      /* Decode command */
+      case null => {
+          buf.mark
+          do {
+            val c = buf.get.asInstanceOf[char]
+            baos.write(c)
+            if(c == '\r' && buf.hasRemaining && buf.get == '\n') {
+              baos.close
+              val mData = MemcacheProtocolDecoder.decode(baos.toString)
+              if(mData.waitData) sess.setAttribute(sessId, mData) else out.write(mData)
+              return MessageDecoderResult.OK
+            }
+          } while (buf.hasRemaining)
 
-    buf.reset
-    return MessageDecoderResult.NEED_DATA
+          buf.reset
+          return MessageDecoderResult.NEED_DATA
+      }
+    }
+
   }
 }

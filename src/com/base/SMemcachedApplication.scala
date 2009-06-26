@@ -51,13 +51,16 @@ object SMemcachedApplication {
           }
       })
 
-    val sMemcached = new SMemcached(
-      defs("address").asInstanceOf[String],
-        defs("port").toString.toInt,
-        defs("threads").toString.toInt,
-        new HashMapStorage())
+    implicit def any2Str(a:Any) = a.asInstanceOf[String]
+    implicit def any2Int(a:Any) = a.toString.toInt
+    implicit def any2Bool(a:Any) = a.asInstanceOf[Boolean]
 
-    println("Listening on "+ (if (defs("address") != null) defs("address")+":" else "") + defs("port"))
+    val sMemcached = new SMemcached(
+      defs("address"),defs("port"),defs("threads"),
+        new EHCacheStorage(defs("cacheName"),defs("timetoLive"),
+                           defs("maxElements"),defs("overflow")))
+
+    println("Listening on "+ (if (defs("address") != null) defs("address").toString+":" else "") + defs("port"))
     sMemcached.startBlocking
 	}
 }
