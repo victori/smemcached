@@ -15,8 +15,8 @@ class EHCacheStorage(cacheName:String,ttl:Int,maxEl:Int,overflow:Boolean) extend
   private val cache = new Ehcache(cacheName,ttl,maxEl,overflow,60*60)
 
   val maxMemoryMB = Runtime.getRuntime.maxMemory / 1024 /1024
-  println("Cache with "+maxEl+" in memory")
-  println("File cache size: "+maxMemoryMB+"m")
+  println("Cache with "+maxEl+" elements to be stored in memory.")
+  println("File cache size of "+maxMemoryMB+"MB.")
   
   if (overflow) {
     cache.getCache.getCacheConfiguration.setOverflowToDisk(true)
