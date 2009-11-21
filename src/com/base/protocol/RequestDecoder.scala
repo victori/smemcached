@@ -49,7 +49,7 @@ class RequestDecoder extends MessageDecoderAdapter {
       case null => {
           buf.mark
           do {
-            val c = buf.get.asInstanceOf[char]
+            val c = buf.get.asInstanceOf[Char]
             baos.write(c)
             if(c == '\r' && buf.hasRemaining && buf.get == '\n') {
               baos.close

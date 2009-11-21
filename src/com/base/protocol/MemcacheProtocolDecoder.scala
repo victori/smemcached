@@ -38,7 +38,7 @@ object MemcacheProtocolDecoder {
     }
 
     // 0 = key, 1 = flags, 2 = expire, 3 = length
-    val opts:Array[String] = line.substring(line.indexOf(" ")+1).split(" ").map({case w => w.trim})
+    val opts:Array[String] = line.substring(line.indexOf(" ")+1).split(" ").map({case w => w.trim}).toArray
     cmd match {
       case c @ ("SET" | "CAS" | "PREPEND" | "APPEND" | "ADD" | "REPLACE") => {
           mData.command=c

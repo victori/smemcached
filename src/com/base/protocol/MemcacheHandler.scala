@@ -22,6 +22,7 @@ import org.apache.mina.core.session.IoSession
 import com.base.lang._
 import scala.collection.mutable.{Map => MMap}
 import org.apache.commons.io.output.ByteArrayOutputStream
+import com.base._
 
 class MemcacheHandler(storage:CacheStorage) extends IoHandlerAdapter {
   private val stats = MMap[String,Long]("gets"->0,"sets"->0,"stored_sets"->0,
