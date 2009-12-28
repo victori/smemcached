@@ -22,7 +22,7 @@ import com.base.lang._
 
 object SMemcachedApplication {
   
-	def main(args : Array[String]) : Unit = {
+  def main(args : Array[String]) : Unit = {
     var defs = Map[String,Any]("address"->null,"port"->11211,"threads"->(Sys.cpus + 1),
                                "maxElements"->10000,"timetoLive"->3600,"overflow"->true,"cacheName"->"defaultcache")
 
@@ -62,7 +62,7 @@ object SMemcachedApplication {
 
     println("Listening on "+ (if (defs("address") != null) defs("address").toString+":" else "") + defs("port"))
     sMemcached.startBlocking
-	}
+  }
 }
 
 object OptsHelper {

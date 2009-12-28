@@ -19,6 +19,7 @@ package com.base
 import java.net.InetSocketAddress;
 import org.apache.mina.transport.socket._
 import org.apache.mina.transport.socket.nio._
+import java.util.concurrent.Executors
 import org.apache.mina.core.filterchain._
 import com.base.storage._
 import org.apache.mina.filter.codec.ProtocolCodecFilter
@@ -29,8 +30,8 @@ object SMemcached { final val version:String = "0.7" }
 class SMemcached(val address:String,val port:Int,val threads:Int,val storage:CacheStorage) {
   private var acceptor:NioSocketAcceptor = _
 
-  def this(port:Int,storage:CacheStorage) = this(null,port,(Sys.cpus+1),storage)
-  def this(address:String,port:Int,storage:CacheStorage) = this(address,port,(Sys.cpus+1),storage)
+  def this(port:Int,storage:CacheStorage) = this(null,port,(Sys.cpus*2),storage)
+  def this(address:String,port:Int,storage:CacheStorage) = this(address,port,(Sys.cpus*2),storage)
 
   def startBlocking():Unit = {
     start()
@@ -38,10 +39,12 @@ class SMemcached(val address:String,val port:Int,val threads:Int,val storage:Cac
   }
   
   def start():Unit = {
-    acceptor = new NioSocketAcceptor(threads)
+    val acceptorExec = Executors.newCachedThreadPool();
+    acceptor = new NioSocketAcceptor(acceptorExec,new NioProcessor(acceptorExec));
+    acceptor.setBacklog(1000) // 50 is the default
     val chain = acceptor.getFilterChain()
 
-    chain.addFirst("codec", new ProtocolCodecFilter(new MemcacheProtocolFactory()))
+    chain.addLast("codec", new ProtocolCodecFilter(new MemcacheProtocolFactory()))
 
     val cfg = acceptor.getSessionConfig()
     cfg.setSendBufferSize(1024000)

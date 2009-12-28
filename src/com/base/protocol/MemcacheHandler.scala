@@ -21,24 +21,33 @@ import com.base.storage._
 import org.apache.mina.core.session.IoSession
 import com.base.lang._
 import scala.collection.mutable.{Map => MMap}
+import java.util.concurrent.atomic.AtomicLong
 import org.apache.commons.io.output.ByteArrayOutputStream
 import com.base._
 
 class MemcacheHandler(storage:CacheStorage,app:SMemcached) extends IoHandlerAdapter {
-  private val stats = MMap[String,Long]("cmd_get"->0,"cmd_set"->0,"cmd_flush"->0,"total_cmd_set"->0,
-                                        "get_hits"->0,"bytes_read"->0,"bytes_written"->0,"get_misses"->0,"total_connections"->0,
-                                        "curr_connections"->0,"uptime"->Sys.timeSecs)
+  private val stats = MMap[String,AtomicLong]("cmd_get"->new AtomicLong(0),
+                                        "cmd_set"->new AtomicLong(0),
+                                        "cmd_flush"->new AtomicLong(0),
+                                        "total_cmd_set"->new AtomicLong(0),
+                                        "get_hits"->new AtomicLong(0),
+                                        "bytes_read"->new AtomicLong(0),
+                                        "bytes_written"->new AtomicLong(0),
+                                        "get_misses"->new AtomicLong(0),
+                                        "total_connections"->new AtomicLong(0),
+                                        "curr_connections"->new AtomicLong(0),
+                                        "uptime"->new AtomicLong(Sys.timeSecs))
 
   @throws(classOf[Exception])
   override def sessionOpened(sess:IoSession):Unit = {
-    super.sessionOpened(sess); 
-    synchronized { stats("total_connections") += 1; stats("curr_connections") += 1 }
+    super.sessionOpened(sess);
+    stats("total_connections").addAndGet(1) ; stats("curr_connections").addAndGet(1)
   }
 
   @throws(classOf[Exception])
   override def sessionClosed(sess:IoSession):Unit = {
     super.sessionClosed(sess); 
-    synchronized { stats("curr_connections") -= 1 }
+    stats("curr_connections").decrementAndGet
   }
 
   @throws(classOf[Exception])
@@ -64,12 +73,12 @@ class MemcacheHandler(storage:CacheStorage,app:SMemcached) extends IoHandlerAdap
   }
 
   protected def flush(resp:ResponseMessage):Unit = {
-    synchronized { stats("cmd_flush") += 1 }
+    stats("cmd_flush").addAndGet(1)
     storage.clear;resp.write("OK")
   }
 
   protected def set(cmd:MemElement,resp:ResponseMessage):Unit = {
-    synchronized { stats("cmd_set") += 1 }
+    stats("cmd_set").addAndGet(1)
     cmd.command match {
       case c @ ("REPLACE" | "PREPEND" | "APPEND") => {
           storage.get(cmd.key) match {
@@ -85,7 +94,7 @@ class MemcacheHandler(storage:CacheStorage,app:SMemcached) extends IoHandlerAdap
                 el.data=bos.toByteArray
                 el.length = el.data.length
                 storage.put(el)
-                synchronized { stats("total_cmd_set") += 1;stats("bytes_written") += el.length }
+                stats("total_cmd_set").addAndGet(1);stats("bytes_written").addAndGet(el.length)
                 resp.write("STORED")
               }
           }
@@ -95,14 +104,14 @@ class MemcacheHandler(storage:CacheStorage,app:SMemcached) extends IoHandlerAdap
             case el:MemElement => resp.write("NOT_STORED")
             case null => {
                 storage.put(cmd)
-                synchronized { stats("total_cmd_set") += 1;stats("bytes_written") += cmd.length }
+                stats("total_cmd_set").addAndGet(1);stats("bytes_written").addAndGet(cmd.length)
                 resp.write("STORED")
               }
           }
         }
       case "SET" => {
           storage.put(cmd)
-          synchronized { stats("total_cmd_set") += 1;stats("bytes_written") += cmd.length }
+          stats("total_cmd_set").addAndGet(1);stats("bytes_written").addAndGet(cmd.length)
           resp.write("STORED")
         }
       case _ => {}
@@ -110,17 +119,17 @@ class MemcacheHandler(storage:CacheStorage,app:SMemcached) extends IoHandlerAdap
   }
 
   protected def get(cmd:MemElement,resp:ResponseMessage):Unit = {
-    synchronized { stats("cmd_get") += 1 }
+    stats("cmd_get").addAndGet(1)
     cmd.metaData.foreach({case k =>
           storage.get(k) match {
             case el:MemElement => {
-                synchronized { stats("get_hits") += 1;stats("bytes_read")+=el.length }
+                stats("get_hits").addAndGet(1);stats("bytes_read").addAndGet(el.length)
                 val data = el.data
                 val casStr = if (cmd.command == "GETS") " " +el.length else ""
                 resp.write("VALUE "+el.key+" "+el.flags+" "+el.length+casStr)
                 resp.write(data)
               }
-            case null => synchronized { stats("get_misses") += 1 }
+            case null => stats("get_misses").addAndGet(1)
           }
           resp.write("END")
       })
@@ -156,7 +165,7 @@ class MemcacheHandler(storage:CacheStorage,app:SMemcached) extends IoHandlerAdap
 
   protected def stats(resp:ResponseMessage):Unit = {
     resp.stat("pid",Sys.pid)
-    resp.stat("uptime", Sys.timeSecs-stats("uptime"))
+    resp.stat("uptime", Sys.timeSecs-stats("uptime").get)
     resp.stat("time", Sys.timeSecs)
     resp.stat("pointer_size", if(Sys.is64bit) 64 else 32)
     resp.stat("accepting_conns",1)
