@@ -9,9 +9,10 @@ package com.base.storage
 import com.base.cache.ICache
 import com.base.cache.Ehcache
 import com.base.cache.ICacheStat
+import com.base.protocol._
 
 
-class EHCacheStorage(cacheName:String,ttl:Int,maxEl:Int,overflow:Boolean) extends CacheStorage {
+class EHCacheStorage(val cacheName:String,val ttl:Int,val maxEl:Int,val overflow:Boolean) extends CacheStorage {
   private val cache = new Ehcache(cacheName,ttl,maxEl,overflow,60*60)
 
   val maxMemoryMB = Runtime.getRuntime.maxMemory / 1024 /1024
@@ -22,6 +23,11 @@ class EHCacheStorage(cacheName:String,ttl:Int,maxEl:Int,overflow:Boolean) extend
     cache.getCache.getCacheConfiguration.setOverflowToDisk(true)
     cache.getCache.getCacheConfiguration.setDiskSpoolBufferSizeMB(maxMemoryMB.toInt)
     cache.getCache.getCacheConfiguration.setMaxElementsOnDisk(maxEl * 2)
+  }
+
+  override def stats(resp:ResponseMessage):Unit = {
+      resp.stat("max_memory_elements",maxEl)
+      resp.stat("overflow_disk",overflow)
   }
 
   override def put(el:MemElement):Unit = cache.put(el.key, el, el.expire)

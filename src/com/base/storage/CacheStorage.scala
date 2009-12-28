@@ -17,8 +17,10 @@
 package com.base.storage
 
 import java.io.Serializable
+import com.base.protocol._
 
 abstract trait CacheStorage extends Serializable {
+  def stats(resp:ResponseMessage):Unit
   def keys:List[String]
   def put(el:MemElement):Unit
   def get(key:String):MemElement

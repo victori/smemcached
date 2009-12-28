@@ -16,8 +16,15 @@
 
 package com.base.lang
 
+import java.lang.management.ManagementFactory
+
 object Sys {
   def cpus:Int = Runtime.getRuntime().availableProcessors
   def timeMillis:Long = System.currentTimeMillis
   def timeSecs:Long = System.currentTimeMillis/1000
+  def is64bit:Boolean = System.getProperty("java.vm.name").contains("64-Bit")
+  def pid:Int = {
+    val str = ManagementFactory.getRuntimeMXBean().getName
+    str.substring(0,str.indexOf("@")).toInt
+  }
 }

@@ -24,9 +24,9 @@ import scala.collection.mutable.{Map => MMap}
 import org.apache.commons.io.output.ByteArrayOutputStream
 import com.base._
 
-class MemcacheHandler(storage:CacheStorage) extends IoHandlerAdapter {
-  private val stats = MMap[String,Long]("gets"->0,"sets"->0,"stored_sets"->0,
-                                        "hits"->0,"bytes_read"->0,"bytes_written"->0,"misses"->0,"total_connections"->0,
+class MemcacheHandler(storage:CacheStorage,app:SMemcached) extends IoHandlerAdapter {
+  private val stats = MMap[String,Long]("cmd_get"->0,"cmd_set"->0,"cmd_flush"->0,"total_cmd_set"->0,
+                                        "get_hits"->0,"bytes_read"->0,"bytes_written"->0,"get_misses"->0,"total_connections"->0,
                                         "curr_connections"->0,"uptime"->Sys.timeSecs)
 
   @throws(classOf[Exception])
@@ -52,7 +52,7 @@ class MemcacheHandler(storage:CacheStorage) extends IoHandlerAdapter {
       case "ERROR" => resp.write("ERROR")
       case "STATS" => stats(resp)
       case "VERSION" => resp.write("VERSION "+SMemcached.version)
-      case "FLUSH_ALL" => { storage.clear;resp.write("END") }
+      case "FLUSH_ALL" => flush(resp)
       case "SET" | "REPLACE" | "PREPEND" | "APPEND" | "ADD" => set(mData,resp)
       case "INCR"|"DECR" => incOrDec(mData,resp)
       case "GETS"|"GET" => get(mData,resp)
@@ -63,8 +63,13 @@ class MemcacheHandler(storage:CacheStorage) extends IoHandlerAdapter {
     sess.write(resp)
   }
 
+  protected def flush(resp:ResponseMessage):Unit = {
+    synchronized { stats("cmd_flush") += 1 }
+    storage.clear;resp.write("OK")
+  }
+
   protected def set(cmd:MemElement,resp:ResponseMessage):Unit = {
-    synchronized { stats("sets") += 1 }
+    synchronized { stats("cmd_set") += 1 }
     cmd.command match {
       case c @ ("REPLACE" | "PREPEND" | "APPEND") => {
           storage.get(cmd.key) match {
@@ -80,7 +85,7 @@ class MemcacheHandler(storage:CacheStorage) extends IoHandlerAdapter {
                 el.data=bos.toByteArray
                 el.length = el.data.length
                 storage.put(el)
-                synchronized { stats("stored_sets") += 1;stats("bytes_written") += el.length }
+                synchronized { stats("total_cmd_set") += 1;stats("bytes_written") += el.length }
                 resp.write("STORED")
               }
           }
@@ -90,14 +95,14 @@ class MemcacheHandler(storage:CacheStorage) extends IoHandlerAdapter {
             case el:MemElement => resp.write("NOT_STORED")
             case null => {
                 storage.put(cmd)
-                synchronized { stats("stored_sets") += 1;stats("bytes_written") += cmd.length }
+                synchronized { stats("total_cmd_set") += 1;stats("bytes_written") += cmd.length }
                 resp.write("STORED")
               }
           }
         }
       case "SET" => {
           storage.put(cmd)
-          synchronized { stats("stored_sets") += 1;stats("bytes_written") += cmd.length }
+          synchronized { stats("total_cmd_set") += 1;stats("bytes_written") += cmd.length }
           resp.write("STORED")
         }
       case _ => {}
@@ -105,17 +110,17 @@ class MemcacheHandler(storage:CacheStorage) extends IoHandlerAdapter {
   }
 
   protected def get(cmd:MemElement,resp:ResponseMessage):Unit = {
-    synchronized { stats("gets") += 1 }
+    synchronized { stats("cmd_get") += 1 }
     cmd.metaData.foreach({case k =>
           storage.get(k) match {
             case el:MemElement => {
-                synchronized { stats("hits") += 1;stats("bytes_read")+=el.length }
+                synchronized { stats("get_hits") += 1;stats("bytes_read")+=el.length }
                 val data = el.data
                 val casStr = if (cmd.command == "GETS") " " +el.length else ""
                 resp.write("VALUE "+el.key+" "+el.flags+" "+el.length+casStr)
                 resp.write(data)
               }
-            case null => synchronized { stats("misses") += 1 }
+            case null => synchronized { stats("get_misses") += 1 }
           }
           resp.write("END")
       })
@@ -150,10 +155,17 @@ class MemcacheHandler(storage:CacheStorage) extends IoHandlerAdapter {
   }
 
   protected def stats(resp:ResponseMessage):Unit = {
-    resp.stat("uptime",Sys.timeSecs-stats("uptime"))
-		resp.stat("version", SMemcached.version)
+    resp.stat("pid",Sys.pid)
+    resp.stat("uptime", Sys.timeSecs-stats("uptime"))
+    resp.stat("time", Sys.timeSecs)
+    resp.stat("pointer_size", if(Sys.is64bit) 64 else 32)
+    resp.stat("accepting_conns",1)
+    resp.stat("listen_disabled_num",0)
+    resp.stat("threads", app.threads)
+    resp.stat("version", SMemcached.version)
     resp.stat("curr_items", storage.size)
     resp.stat("evictions", storage.evictions)
+    storage.stats(resp);
     stats.foreach({case (k,v) => if(k != "uptime") resp.stat(k,v )})
     resp.write("END")
   }

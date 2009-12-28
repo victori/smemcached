@@ -25,10 +25,10 @@ import org.apache.mina.filter.codec.ProtocolCodecFilter
 import com.base.protocol._
 import com.base.lang._
 
-object SMemcached { final val version:String = "0.6" }
-class SMemcached(address:String,port:Int,threads:Int,storage:CacheStorage) {
+object SMemcached { final val version:String = "0.7" }
+class SMemcached(val address:String,val port:Int,val threads:Int,val storage:CacheStorage) {
   private var acceptor:NioSocketAcceptor = _
-  
+
   def this(port:Int,storage:CacheStorage) = this(null,port,(Sys.cpus+1),storage)
   def this(address:String,port:Int,storage:CacheStorage) = this(address,port,(Sys.cpus+1),storage)
 
@@ -52,7 +52,7 @@ class SMemcached(address:String,port:Int,threads:Int,storage:CacheStorage) {
     acceptor.setReuseAddress(true)
     // Actor based handler in the works.
     //acceptor.setHandler(new IoActorAdapter(sess => new MemcacheActor(storage,sess)))
-    acceptor.setHandler(new MemcacheHandler(storage))
+    acceptor.setHandler(new MemcacheHandler(storage,this))
     acceptor.bind(if(address == null) new InetSocketAddress(port) else new InetSocketAddress(address,port))
   }
   
