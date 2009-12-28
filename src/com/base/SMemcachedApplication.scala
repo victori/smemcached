@@ -58,7 +58,7 @@ object SMemcachedApplication {
     val sMemcached = new SMemcached(
       defs("address"),defs("port"),defs("threads"),
         new EHCacheStorage(defs("cacheName"),defs("timetoLive"),
-                           defs("maxElements"),defs("overflow")))
+                           defs("maxElements"),String.valueOf(defs("overflow")).toBoolean))
 
     println("Listening on "+ (if (defs("address") != null) defs("address").toString+":" else "") + defs("port"))
     sMemcached.startBlocking
