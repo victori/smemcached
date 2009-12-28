@@ -74,10 +74,10 @@
       <zipfileset src="libs/commons-io-1.3.2.jar"/>
       <zipfileset src="libs/commons-lang-2.4.jar"/>
       <zipfileset src="libs/commons-logging-1.1.1.jar"/>
-      <zipfileset src="libs/ehcache-1.6.0-beta5.jar"/>
-      <zipfileset src="libs/mina-core-2.0.0-M4.jar"/>
+      <zipfileset src="libs/mina-core-2.0.0-RC1.jar"/>
       <zipfileset src="libs/mysql-connector-java-5.0.5-bin.jar"/>
       <zipfileset src="libs/postgresql-8.3-604.jdbc3.jar"/>
+      <zipfileset src="libs/scala-compiler.jar"/>
       <zipfileset src="libs/scala-library.jar"/>
       <zipfileset src="libs/slf4j-api-1.4.3.jar"/>
       <zipfileset src="libs/slf4j-jdk14-1.4.3.jar"/>

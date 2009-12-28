@@ -48,7 +48,7 @@ class SMemcached(address:String,port:Int,threads:Int,storage:CacheStorage) {
     cfg.setReceiveBufferSize(1024000)
     cfg.setTcpNoDelay(true)
     cfg.setReuseAddress(true)
-
+    
     acceptor.setReuseAddress(true)
     // Actor based handler in the works.
     //acceptor.setHandler(new IoActorAdapter(sess => new MemcacheActor(storage,sess)))
