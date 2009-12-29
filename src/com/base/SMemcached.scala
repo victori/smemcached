@@ -22,6 +22,7 @@ import org.apache.mina.transport.socket.nio._
 import java.util.concurrent.Executors
 import org.apache.mina.core.filterchain._
 import com.base.storage._
+import org.apache.mina.core.session.IdleStatus
 import org.apache.mina.filter.codec.ProtocolCodecFilter
 import com.base.protocol._
 import com.base.lang._
@@ -39,8 +40,9 @@ class SMemcached(val address:String,val port:Int,val threads:Int,val storage:Cac
   }
   
   def start():Unit = {
-    val acceptorExec = Executors.newCachedThreadPool();
-    acceptor = new NioSocketAcceptor(acceptorExec,new NioProcessor(acceptorExec));
+    val acceptorExec = Executors.newCachedThreadPool()
+    acceptor = new NioSocketAcceptor(acceptorExec,new NioProcessor(acceptorExec))
+    //acceptor = new NioSocketAcceptor(100)
     acceptor.setBacklog(1000) // 50 is the default
     val chain = acceptor.getFilterChain()
 
@@ -50,7 +52,9 @@ class SMemcached(val address:String,val port:Int,val threads:Int,val storage:Cac
     cfg.setSendBufferSize(1024000)
     cfg.setReceiveBufferSize(1024000)
     cfg.setTcpNoDelay(true)
+    cfg.setReadBufferSize(2048)
     cfg.setReuseAddress(true)
+    cfg.setIdleTime(IdleStatus.BOTH_IDLE, 30)
     
     acceptor.setReuseAddress(true)
     // Actor based handler in the works.
