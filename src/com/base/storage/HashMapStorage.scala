@@ -20,6 +20,7 @@ import com.base.lang.RichList.toRichList
 
 import java.util.concurrent.ConcurrentHashMap
 import com.base.lang.RichConcurrentMap.toRichConcurrentMap
+import com.base.protocol.ResponseMessage
 
 class HashMapStorage extends CacheStorage {
   private var _map:ConcurrentHashMap[String,MemElement] = new ConcurrentHashMap()
@@ -31,4 +32,5 @@ class HashMapStorage extends CacheStorage {
   override def evictions:Long = 0
   override def keys:List[String] = _map.keyList
   override def clear:Unit = { _map = new ConcurrentHashMap() }
+  override def stats(resp: ResponseMessage) = null
 }
